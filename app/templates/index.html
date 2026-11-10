@@ -73,12 +73,25 @@
   <body>
     <main>
       <h1>Trivia de cultura general</h1>
-      <p id="progreso" aria-live="polite"></p>
-      <h2 id="pregunta">Cargando preguntas…</h2>
-      <div id="opciones"></div>
-      <p id="mensaje" aria-live="polite"></p>
-      <p id="puntaje">Puntaje: 0</p>
-      <button id="siguiente" type="button" hidden>Siguiente pregunta</button>
+      <section id="configuracion">
+        <label for="cantidad">Cantidad de preguntas:</label>
+        <select id="cantidad">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+        </select>
+        <button id="iniciar" type="button">Comenzar trivia</button>
+      </section>
+      <section id="trivia" hidden>
+        <p id="progreso" aria-live="polite"></p>
+        <h2 id="pregunta"></h2>
+        <div id="opciones"></div>
+        <p id="mensaje" aria-live="polite"></p>
+        <p id="puntaje">Puntaje: 0</p>
+        <button id="siguiente" type="button" hidden>Siguiente pregunta</button>
+      </section>
     </main>
     <script>
       const preguntaEl = document.querySelector("#pregunta");
@@ -87,6 +100,10 @@
       const mensajeEl = document.querySelector("#mensaje");
       const puntajeEl = document.querySelector("#puntaje");
       const siguienteEl = document.querySelector("#siguiente");
+      const cantidadEl = document.querySelector("#cantidad");
+      const iniciarEl = document.querySelector("#iniciar");
+      const configuracionEl = document.querySelector("#configuracion");
+      const triviaEl = document.querySelector("#trivia");
       let preguntas = [];
       let indice = 0;
       let puntaje = 0;
@@ -155,19 +172,29 @@
         siguienteEl.hidden = true;
       });
 
-      fetch("/api/preguntas")
-        .then((respuesta) => {
-          if (!respuesta.ok) throw new Error("No se pudieron cargar las preguntas");
-          return respuesta.json();
-        })
-        .then((datos) => {
-          preguntas = datos;
+      iniciarEl.addEventListener("click", async () => {
+        iniciarEl.disabled = true;
+        try {
+          const respuesta = await fetch(
+            `/api/preguntas?cantidad=${cantidadEl.value}`,
+          );
+          if (!respuesta.ok) {
+            throw new Error("No se pudieron cargar las preguntas");
+          }
+          preguntas = await respuesta.json();
+          indice = 0;
+          puntaje = 0;
+          puntajeEl.textContent = `Puntaje: ${puntaje}`;
+          configuracionEl.hidden = true;
+          triviaEl.hidden = false;
           mostrarPregunta();
-        })
-        .catch(() => {
-          preguntaEl.textContent = "No se pudieron cargar las preguntas.";
-          progresoEl.textContent = "";
-        });
+        } catch {
+          progresoEl.textContent = "No se pudieron cargar las preguntas.";
+          triviaEl.hidden = false;
+        } finally {
+          iniciarEl.disabled = false;
+        }
+      });
     </script>
   </body>
 </html>
